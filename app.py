@@ -5,16 +5,21 @@ from skimage import color
 import joblib
 import os
 
-# Load model (ensure the model file is in the same folder)
-model_path = os.path.join(os.path.dirname(__file__), 'ammonia_prediction_model.pkl')
-model = joblib.load(model_path)
+# Load the trained model
+@st.cache_resource
+def load_model():
+    model_path = os.path.join(os.path.dirname(__file__), 'ammonia_prediction_model.pkl')
+    return joblib.load(model_path)
 
-st.set_page_config(page_title="Ammonia Gas Detector", layout="centered")
+model = load_model()
+
+# Streamlit page settings
+st.set_page_config(page_title="Ammonia Color Sensor App", layout="centered")
 
 st.title("🎨 Ammonia Color Sensor - Concentration Prediction")
-st.write("Upload an image of your coated sensor and predict ammonia concentration (%)")
+st.write("Upload an image of the coated sensor to predict ammonia concentration (%)")
 
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Upload sensor image (jpg, jpeg, png)", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     img = Image.open(uploaded_file).convert('RGB')
@@ -31,9 +36,9 @@ if uploaded_file is not None:
     avg_a = np.mean(img_lab[:, :, 1])
     avg_b_lab = np.mean(img_lab[:, :, 2])
 
-    features = np.array([[avg_r, avg_g, avg_b, avg_l, avg_a, avg_b_lab, 0]])
+    features = np.array([[avg_r, avg_g, avg_b, avg_l, avg_a, avg_b_lab, 0]])  # dE = 0 for reference
 
-    # Predict concentration
+    # Predict ammonia concentration
     concentration = model.predict(features)[0]
 
     st.success(f"✅ Predicted Ammonia Concentration: **{concentration:.2f}%**")
